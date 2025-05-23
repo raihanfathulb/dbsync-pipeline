@@ -13,6 +13,18 @@ from sqlalchemy import create_engine
 import sys
 from sqlalchemy import text
 
+# --- Google Chat Notification ---
+WEBHOOK_URL = "<YOUR_GOOGLE_CHAT_WEBHOOK_URL>"
+
+def send_google_chat_notification(message):
+    headers = {'Content-Type': 'application/json; charset=UTF-8'}
+    data = {
+        "text": message
+    }
+    response = requests.post(WEBHOOK_URL, json=data, headers=headers)
+    if response.status_code != 200:
+        print(f"Failed to send notification: {response.status_code}, {response.text}")
+
 # Start processing timer
 first_time = dt.datetime.now()
 dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
@@ -87,6 +99,8 @@ if len(df) == 0:
     con_dest = create_engine(postgres_str_dest)
     with con_dest.connect() as con_status:
         con_status.execute("UPDATE <pipeline_status_table> SET status = 'done', write_date = '{}', peformance = '{}' WHERE pipeline = '<pipeline_id>'".format(save_date_cron, x_ms)) 
+    # Kirim notifikasi Google Chat
+    send_google_chat_notification("Proses Upsert selesai: Tidak ada data yang diupsert.")
     sys.exit()
 
 # In[10]:
@@ -148,3 +162,5 @@ x_ms = str(round(difference.total_seconds() * 1000, 2)) + ' ms'
 con_dest = create_engine(postgres_str_dest)
 with con_dest.connect() as con_status:
     con_status.execute("UPDATE <pipeline_status_table> SET status = 'done', write_date = '{}', peformance = '{}' WHERE pipeline = '<pipeline_id>'".format(save_date_cron, x_ms))
+# --- Kirim notifikasi Google Chat ---
+send_google_chat_notification(f"Proses Upsert selesai: Berhasil Upsert {len(df)} data.")

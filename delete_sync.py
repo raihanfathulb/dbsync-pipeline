@@ -8,6 +8,18 @@ from sqlalchemy import create_engine
 import sys
 from sqlalchemy import text
 
+# --- Google Chat Notification ---
+WEBHOOK_URL = "<YOUR_GOOGLE_CHAT_WEBHOOK_URL>"
+
+def send_google_chat_notification(message):
+    headers = {'Content-Type': 'application/json; charset=UTF-8'}
+    data = {
+        "text": message
+    }
+    response = requests.post(WEBHOOK_URL, json=data, headers=headers)
+    if response.status_code != 200:
+        print(f"Failed to send notification: {response.status_code}, {response.text}")
+
 # Mulai pencatatan waktu proses
 first_time = dt.datetime.now()
 dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S") 
@@ -74,6 +86,9 @@ if len(dflog) == 0:
     con_log_cs2 = create_engine(mysql_str_cs2)
     with con_log_cs2.connect() as con_status:
         con_status.execute("UPDATE <cron_table> SET dtu = NOW(), note = 'Done - No Delete Data' WHERE id = '<cron_id>';")
+
+    # Kirim notifikasi Google Chat
+    send_google_chat_notification("Proses DELETE selesai: Tidak ada data yang dihapus.")
     sys.exit()
 
 # Persiapkan daftar ID dari log
@@ -136,3 +151,6 @@ x_ms = str(round(difference.total_seconds() * 1000, 2)) + ' ms'
 con_log_cs2 = create_engine(mysql_str_cs2)
 with con_log_cs2.connect() as con_status:
     con_status.execute("UPDATE <cron_table> SET dtu = NOW(), note = 'Done - Successfully Deleted' WHERE id = '<cron_id>';")
+
+# --- Kirim notifikasi Google Chat ---
+send_google_chat_notification(f"Proses DELETE selesai: Berhasil menghapus {len(list_del)} data.")
